@@ -1,12 +1,22 @@
 from dotenv import load_dotenv
 import os
 import bot
+import core
+import db
+from server import get_app
 
 load_dotenv()
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-GITHUB_ORG = os.getenv("GITHUB_ORG")
+GITHUB_TOKEN = str(os.getenv("GITHUB_TOKEN"))
+GITHUB_ORG = str(os.getenv("GITHUB_ORG"))
+TELEGRAM_TOKEN = str(os.getenv("TELEGRAM_TOKEN"))
+DB_PATH = "team.sqlite"
 
-if __name__ == "__main__":
-    bot = bot.Bot(TELEGRAM_TOKEN, GITHUB_ORG)
-    bot.run()
+db = db.DB(DB_PATH)
+db.init_db()
+
+core = core.Core(db, GITHUB_TOKEN, GITHUB_ORG)
+
+bot = bot.Bot(TELEGRAM_TOKEN, core)
+
+app = get_app(lambda: core)

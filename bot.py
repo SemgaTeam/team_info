@@ -1,21 +1,17 @@
-import os
-
-import asyncio
-import aiohttp
-
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-from core import *
+from core import get_league_name
+from core import Core
 
 class Bot:
-    def __init__(self, telegram_token: str, github_org: str):
+    def __init__(self, telegram_token: str, core: Core):
         app = ApplicationBuilder().token(telegram_token).build()
         app.add_handler(CommandHandler("leaderboard", self.leaderboard))
 
         self.TELEGRAM_TOKEN = telegram_token
-        self.GITHUB_ORG = github_org
         self.app = app
+        self.core = core
     
     def run(self):
         print("Бот запущен...")
@@ -23,27 +19,22 @@ class Bot:
 
 
     async def leaderboard(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        loading_message = await update.message.reply_text("Собираем данные, это может занять несколько секунд... ⏳")
-        async with aiohttp.ClientSession() as session:
-            members = await get_org_members(session, self.GITHUB_ORG)
-            repos = await get_org_repos(session, self.GITHUB_ORG)
+        loading_message = await update.message.reply_text("Собираем данные, это может занять несколько секунд... ⏳") # pyright: ignore[reportOptionalMemberAccess]
 
-            tasks = [get_member_stats(session, self.GITHUB_ORG, member, repos) for member in members]
-            results = await asyncio.gather(*tasks)
+        stats = await self.core.get_members_stats()
 
-            leaderboard_data = []
-            for member, (commits, issues) in zip(members, results):
-                score = commits + issues
-                leaderboard_data.append((member, commits, issues, score))
+        if not stats:
+            await loading_message.edit_text(
+                "🏆 Лидерборд команды:\n\nПока нет данных. "
+            )
+            return
 
-            leaderboard_data.sort(key=lambda x: x[3], reverse=True)
+        msg = "🏆 Лидерборд команды:\n\n"
+        for i, (member, commits, issues, score) in enumerate(stats, start=1):
+            league = get_league_name(score)
+            msg += (
+                f"{i}. {member}: {score} | {league} "
+                f"(Коммиты: {commits}, Закрытые Issues: {issues})\n"
+            )
 
-            msg = "🏆 Лидерборд команды:\n\n"
-            for i, (member, commits, issues, score) in enumerate(leaderboard_data, start=1):
-                league = get_league_name(score)
-                msg += (
-                    f"{i}. {member}: {score} | {league} "
-                    f"(Коммиты: {commits}, Закрытые Issues: {issues})\n"
-                )
-
-            await loading_message.edit_text(msg)
+        await loading_message.edit_text(msg)
