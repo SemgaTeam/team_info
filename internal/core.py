@@ -10,10 +10,11 @@ from .utils import *
 load_dotenv()
 
 class Core:
-    def __init__(self, db: DB, GITHUB_TOKEN: str, GITHUB_ORG: str):
+    def __init__(self, db: DB, GITHUB_TOKEN: str, GITHUB_ORG: str, GITHUB_SECRET_TOKEN: str):
         self.db = db
         self.GITHUB_TOKEN = GITHUB_TOKEN
         self.GITHUB_ORG = GITHUB_ORG
+        self.GITHUB_SECRET_TOKEN = GITHUB_SECRET_TOKEN
 
     async def get_members_stats(self) -> List[Any]:
         return self.db.get_members_stats()
@@ -35,7 +36,6 @@ class Core:
             self.db.insert_member_stats(member, commits, issues, now)
 
     async def handle_webhook_event(self, event_type, sender_login, repository_name, payload, received_at):
-        print("-------------------------handling webhook event")
         payload_json = json.dumps(payload, ensure_ascii=False)
 
         self.db.insert_webhook_event(event_type, sender_login, repository_name, payload_json, received_at)
@@ -93,7 +93,6 @@ class Core:
             return
         creator = payload.get("sender") or {}
         login = creator.get("login")
-        print("-----------------------", creator, login)
         if login:
             self.upsert_member_closed_issue(login)
 
