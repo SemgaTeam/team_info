@@ -30,7 +30,7 @@ class Bot:
             return
 
         msg = "🏆 Лидерборд команды:\n\n"
-        for i, (member, commits, issues) in enumerate(stats, start=1):
+        for i, (member, commits, issues, _) in enumerate(stats, start=1):
             score = commits + issues
             league = get_league_name(score)
             msg += (

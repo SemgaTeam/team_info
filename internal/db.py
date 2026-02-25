@@ -63,6 +63,7 @@ class DB:
                 received_at,
             ),
         )
+        self.conn.commit()
 
     def get_members_stats(self) -> List[Any]:
         rows = self.conn.execute(
@@ -72,7 +73,6 @@ class DB:
             """
         ).fetchall()
 
-        print(rows)
         return rows
 
     def get_member_stats_by_login(self, login: str):
@@ -82,8 +82,7 @@ class DB:
             FROM member_stats
             WHERE login = ?
             """,
-            (login)
+            (login,)
         ).fetchone()
 
-        print(row)
         return row

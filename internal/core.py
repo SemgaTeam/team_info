@@ -35,6 +35,7 @@ class Core:
             self.db.insert_member_stats(member, commits, issues, now)
 
     async def handle_webhook_event(self, event_type, sender_login, repository_name, payload, received_at):
+        print("-------------------------handling webhook event")
         payload_json = json.dumps(payload, ensure_ascii=False)
 
         self.db.insert_webhook_event(event_type, sender_login, repository_name, payload_json, received_at)
@@ -90,9 +91,9 @@ class Core:
     def handle_issues_event(self, payload: dict) -> None:
         if payload.get("action") != "closed":
             return
-        issue = payload.get("issue") or {}
-        creator = issue.get("user") or {}
+        creator = payload.get("sender") or {}
         login = creator.get("login")
+        print("-----------------------", creator, login)
         if login:
             self.upsert_member_closed_issue(login)
 
