@@ -1,8 +1,8 @@
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-from core import get_league_name
-from core import Core
+from .core import get_league_name
+from .core import Core
 
 class Bot:
     def __init__(self, telegram_token: str, core: Core):
@@ -30,7 +30,8 @@ class Bot:
             return
 
         msg = "🏆 Лидерборд команды:\n\n"
-        for i, (member, commits, issues, score) in enumerate(stats, start=1):
+        for i, (member, commits, issues) in enumerate(stats, start=1):
+            score = commits + issues
             league = get_league_name(score)
             msg += (
                 f"{i}. {member}: {score} | {league} "

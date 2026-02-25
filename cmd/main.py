@@ -1,9 +1,7 @@
 from dotenv import load_dotenv
 import os
-import bot
-import core
-import db
-from server import get_app
+import internal.core as core
+import internal.db as db
 
 load_dotenv()
 
@@ -16,7 +14,3 @@ db = db.DB(DB_PATH)
 db.init_db()
 
 core = core.Core(db, GITHUB_TOKEN, GITHUB_ORG)
-
-bot = bot.Bot(TELEGRAM_TOKEN, core)
-
-app = get_app(lambda: core)

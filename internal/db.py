@@ -46,6 +46,7 @@ class DB:
             """,
             (member, commits, issues, updated_time),
         )
+        print("insert member stats", member, commits, issues)
         self.conn.commit()
 
     def insert_webhook_event(self, event_type, sender_login, repository_name, payload_json, received_at):
@@ -71,6 +72,7 @@ class DB:
             """
         ).fetchall()
 
+        print(rows)
         return rows
 
     def get_member_stats_by_login(self, login: str):
@@ -83,4 +85,5 @@ class DB:
             (login)
         ).fetchone()
 
+        print(row)
         return row

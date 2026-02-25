@@ -1,4 +1,4 @@
-from core import Core
+from internal.core import Core
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Header, HTTPException, Request, Depends

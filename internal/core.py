@@ -1,12 +1,11 @@
-import os
 import asyncio
 import json
 from typing import Any, List
 import aiohttp
 from dotenv import load_dotenv
 
-from db import DB
-from utils import *
+from .db import DB
+from .utils import *
 
 load_dotenv()
 
