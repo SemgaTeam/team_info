@@ -1,6 +1,4 @@
 from dataclasses import dataclass
-from .user import User
-
 @dataclass
 class IssuesWebhookEvent:
     action: str
@@ -10,3 +8,7 @@ class IssuesWebhookEvent:
 @dataclass
 class Issue:
     repository_url: str
+
+@dataclass
+class User:
+    login: str

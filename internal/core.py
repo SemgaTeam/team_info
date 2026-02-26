@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 
 from .db import DB
 from .utils import *
+from entities import MemberStats, User
 
 load_dotenv()
 
@@ -16,8 +17,14 @@ class Core:
         self.GITHUB_ORG = GITHUB_ORG
         self.GITHUB_SECRET_TOKEN = GITHUB_SECRET_TOKEN
 
-    async def get_members_stats(self) -> List[Any]:
+
+    async def get_members_stats(self) -> List[MemberStats]:
         return self.db.get_members_stats()
+
+
+    async def get_user_by_id(self, id: int) -> User:
+        return self.db.get_user_by_id(id)
+
 
     async def backfill(self, org_name: str | None = None) -> None:
         target_org = org_name or self.GITHUB_ORG
@@ -46,25 +53,34 @@ class Core:
             self.handle_issues_event(payload)
 
     def upsert_member_commits(self, login: str, amount: int) -> None:
+        user = self.db.get_user_by_login(login)
+        stats = self.db.get_member_stats_by_user_id(user.id)
+
         commits = 0
         issues = 0
-        stats = self.db.get_member_stats_by_login(login)
+
         if stats:
-            commits, issues, _ = stats
+            commits = stats.commits
+            issues = stats.closed_issues
 
         now = utc_now_iso()
 
-        self.db.insert_member_stats(login, commits+amount, issues, now) # pyright: ignore[reportPossiblyUnboundVariable]
+        self.db.insert_member_stats(login, commits+amount, issues, now)
 
 
     def upsert_member_closed_issue(self, login: str) -> None:
+        user = self.db.get_user_by_login(login)
+        stats = self.db.get_member_stats_by_user_id(user.id)
+
         commits = 0
         issues = 0
-        stats = self.db.get_member_stats_by_login(login)
+
         if stats:
-            commits, issues, _ = stats
+            commits = stats.commits
+            issues = stats.closed_issues
 
         now = utc_now_iso()
+
         self.db.insert_member_stats(login, commits, issues+1, now)
 
 
@@ -95,6 +111,7 @@ class Core:
         login = creator.get("login")
         if login:
             self.upsert_member_closed_issue(login)
+
 
 def get_league_name(score: int) -> str:
     if score >= 120:

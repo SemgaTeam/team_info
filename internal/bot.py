@@ -30,12 +30,15 @@ class Bot:
             return
 
         msg = "🏆 Лидерборд команды:\n\n"
-        for i, (member, commits, issues, _) in enumerate(stats, start=1):
-            score = commits + issues
+        for i, stat in enumerate(stats, start=1):
+            score = stat.commits + stat.closed_issues
             league = get_league_name(score)
+
+            user = await self.core.get_user_by_id(stat.user_id)
+
             msg += (
-                f"{i}. {member}: {score} | {league} "
-                f"(Коммиты: {commits}, Закрытые Issues: {issues})\n"
+                f"{i}. {user.github_login}: {score} | {league} "
+                f"(Коммиты: {stat.commits}, Закрытые Issues: {stat.closed_issues})\n"
             )
 
         await loading_message.edit_text(msg)

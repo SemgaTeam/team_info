@@ -2,4 +2,6 @@ from dataclasses import dataclass
 
 @dataclass
 class User:
-    login: str
+    id: int
+    github_login: str
+    telegram_id: str
