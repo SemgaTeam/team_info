@@ -4,6 +4,10 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from .core import get_league_name
 from .core import Core
 
+from entities import MemberStats, User
+
+from typing import List 
+
 class Bot:
     def __init__(self, telegram_token: str, core: Core):
         app = ApplicationBuilder().token(telegram_token).build()
@@ -21,24 +25,43 @@ class Bot:
     async def leaderboard(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         loading_message = await update.message.reply_text("Собираем данные, это может занять несколько секунд... ⏳") # pyright: ignore[reportOptionalMemberAccess]
 
-        stats = await self.core.get_members_stats()
+        stats = await self.load_stats()
 
-        if not stats:
-            await loading_message.edit_text(
-                "🏆 Лидерборд команды:\n\nПока нет данных. "
-            )
-            return
-
-        msg = "🏆 Лидерборд команды:\n\n"
-        for i, stat in enumerate(stats, start=1):
-            score = stat.commits + stat.closed_issues
-            league = get_league_name(score)
-
-            user = await self.core.get_user_by_id(stat.user_id)
-
-            msg += (
-                f"{i}. {user.github_login}: {score} | {league} "
-                f"(Коммиты: {stat.commits}, Закрытые Issues: {stat.closed_issues})\n"
-            )
+        msg = format_leaderboard(stats)
 
         await loading_message.edit_text(msg)
+
+    
+    async def load_stats(self) -> List[tuple[MemberStats, User, int]]:
+        stats = await self.core.get_members_stats()
+
+        users: List[User] = []
+        rating: List[int] = []
+        for stat in stats:
+            user = await self.core.get_user_by_id(stat.user_id)
+            users.append(user)
+
+            user_rating = self.core.calculate_rating(stat)
+            rating.append(user_rating)
+
+        return list(zip(
+            stats,
+            users,
+            rating
+        ))
+        
+
+def format_leaderboard(stats: List[tuple[MemberStats, User, int]]) -> str:
+    if not stats:
+        return "🏆 Лидерборд команды:\n\nПока нет данных. "
+
+    msg = "🏆 Лидерборд команды:\n\n"
+    for i, (stat, user, rating) in enumerate(stats, start=1):
+        league = get_league_name(rating)
+
+        msg += (
+            f"{i}. {user.github_login}: {rating} | {league} "
+            f"(Коммиты: {stat.commits}, Закрытые Issues: {stat.closed_issues})\n"
+        )
+
+    return msg

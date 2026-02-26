@@ -113,6 +113,9 @@ class Core:
             self.upsert_member_closed_issue(login)
 
 
+    def calculate_rating(self, stat: MemberStats) -> int:
+        return stat.commits + stat.closed_issues    
+
 def get_league_name(score: int) -> str:
     if score >= 120:
         return "Лига Ctrl+C / Ctrl+V Магистров"
