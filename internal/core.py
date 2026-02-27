@@ -22,7 +22,7 @@ class Core:
         return self.db.get_members_stats()
 
 
-    async def get_user_by_id(self, id: int) -> User:
+    async def get_user_by_id(self, id: int) -> User | None:
         return self.db.get_user_by_id(id)
 
 
@@ -42,6 +42,26 @@ class Core:
         for member, (commits, issues) in zip(members, stats):
             self.db.insert_member_stats(member, commits, issues, now)
 
+    async def load_stats(self) -> List[tuple[MemberStats, User, int]]:
+        stats = self.db.get_members_stats()
+
+        users: List[User] = []
+        rating: List[int] = []
+        for stat in stats:
+            user = self.db.get_user_by_id(stat.user_id)
+            if user is None:
+                raise Exception("user is none")
+
+            users.append(user)
+            user_rating = self.calculate_rating(stat)
+            rating.append(user_rating)
+
+        return list(zip(
+            stats,
+            users,
+            rating
+        ))
+
     async def handle_webhook_event(self, event_type, sender_login, repository_name, payload, received_at):
         payload_json = json.dumps(payload, ensure_ascii=False)
 
@@ -53,15 +73,15 @@ class Core:
             self.handle_issues_event(payload)
 
     def upsert_member_commits(self, login: str, amount: int) -> None:
-        user = self.db.get_user_by_login(login)
-        stats = self.db.get_member_stats_by_user_id(user.id)
-
         commits = 0
         issues = 0
 
-        if stats:
-            commits = stats.commits
-            issues = stats.closed_issues
+        user = self.db.get_user_by_login(login)
+        if user:
+            stats = self.db.get_member_stats_by_user_id(user.id)
+            if stats:
+                commits = stats.commits
+                issues = stats.closed_issues
 
         now = utc_now_iso()
 
@@ -69,15 +89,15 @@ class Core:
 
 
     def upsert_member_closed_issue(self, login: str) -> None:
-        user = self.db.get_user_by_login(login)
-        stats = self.db.get_member_stats_by_user_id(user.id)
-
         commits = 0
         issues = 0
 
-        if stats:
-            commits = stats.commits
-            issues = stats.closed_issues
+        user = self.db.get_user_by_login(login)
+        if user:
+            stats = self.db.get_member_stats_by_user_id(user.id)
+            if stats:
+                commits = stats.commits
+                issues = stats.closed_issues
 
         now = utc_now_iso()
 

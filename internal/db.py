@@ -85,7 +85,7 @@ class DB:
 
         return rows
 
-    def get_member_stats_by_user_id(self, id: int) -> MemberStats:
+    def get_member_stats_by_user_id(self, id: int) -> MemberStats | None:
         row = self.conn.execute(
             """
             SELECT user_id, commits, closed_issues, updated_at
@@ -97,7 +97,7 @@ class DB:
 
         return row
 
-    def get_user_by_id(self, user_id: int) -> User:
+    def get_user_by_id(self, user_id: int) -> User | None:
         row = self.conn.execute(
             """
             SELECT id, github_login, telegram_id
@@ -109,7 +109,7 @@ class DB:
 
         return row
 
-    def get_user_by_login(self, login: str) -> User:
+    def get_user_by_login(self, login: str) -> User | None:
         row = self.conn.execute(
             """
             SELECT id, github_login, telegram_id

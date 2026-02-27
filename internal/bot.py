@@ -25,31 +25,12 @@ class Bot:
     async def leaderboard(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         loading_message = await update.message.reply_text("Собираем данные, это может занять несколько секунд... ⏳") # pyright: ignore[reportOptionalMemberAccess]
 
-        stats = await self.load_stats()
+        stats = await self.core.load_stats()
 
         msg = format_leaderboard(stats)
 
         await loading_message.edit_text(msg)
-
     
-    async def load_stats(self) -> List[tuple[MemberStats, User, int]]:
-        stats = await self.core.get_members_stats()
-
-        users: List[User] = []
-        rating: List[int] = []
-        for stat in stats:
-            user = await self.core.get_user_by_id(stat.user_id)
-            users.append(user)
-
-            user_rating = self.core.calculate_rating(stat)
-            rating.append(user_rating)
-
-        return list(zip(
-            stats,
-            users,
-            rating
-        ))
-        
 
 def format_leaderboard(stats: List[tuple[MemberStats, User, int]]) -> str:
     if not stats:
