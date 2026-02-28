@@ -1,6 +1,6 @@
 import sqlite3
 from typing import Any, List
-from entities import User, MemberStats
+from .entities import User, MemberStats
 
 class DB:
     def __init__(self, db_path: str):

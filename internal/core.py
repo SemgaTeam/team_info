@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from .db import DB
 from .utils import *
-from entities import MemberStats, User
+from .entities import MemberStats, User
 
 load_dotenv()
 
