@@ -109,16 +109,15 @@ class Core:
         authors_count: dict[str, int] = {}
         for commit in commits:
             author = commit.get("author") or {}
-            login = author.get("username")
-            if not login:
-                continue
-            authors_count[login] = authors_count.get(login, 0) + 1
+            commiter = commit.get("commiter") or {}
 
-        # Fallback for squash/empty details: attribute all commits to sender.
-        if not authors_count and commits:
-            sender = (payload.get("sender") or {}).get("login")
-            if sender:
-                authors_count[sender] = len(commits)
+            author_login = author.get("username") or ""
+            commiter_login = commiter.get("username") or ""
+
+            if author_login != commiter_login: # count commits only made by the commiter
+                continue
+
+            authors_count[author_login] = authors_count.get(author_login, 0) + 1
 
         for login, amount in authors_count.items():
             self.upsert_member_commits(login, amount)
