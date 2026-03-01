@@ -67,6 +67,14 @@ class Bot:
         return bool(re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?", github_login))
 
 
+    async def change_user_rating(self, event: ChangeUserRatingEvent):
+        chat_id = self.users[event.github_login]
+        if chat_id is None:
+            return
+        
+        await self.app.bot.send_message(chat_id, "Заработан рейтинг: +" + str(event.rating))
+
+
     async def leaderboard(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         loading_message = await update.message.reply_text("Собираем данные, это может занять несколько секунд... ⏳") # pyright: ignore[reportOptionalMemberAccess]
 
