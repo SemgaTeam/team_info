@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from .db import DB
 from .utils import *
-from .entities import MemberStats, User, RawCommiterData, BotWebhookEvent
+from .entities import MemberStats, User, RawCommiterData, ChangeUserRatingEvent
 
 load_dotenv()
 
@@ -67,7 +67,7 @@ class Core:
             rating
         ))
 
-    async def handle_webhook_event(self, event_type, sender_login, repository_name, payload, received_at) -> BotWebhookEvent | None:
+    async def handle_webhook_event(self, event_type, sender_login, repository_name, payload, received_at) -> ChangeUserRatingEvent | None:
         payload_json = json.dumps(payload, ensure_ascii=False)
 
         self.db.insert_webhook_event(event_type, sender_login, repository_name, payload_json, received_at)
@@ -84,7 +84,7 @@ class Core:
             
         rating = self.calculate_rating(data)
 
-        return BotWebhookEvent(data.github_login, rating)
+        return ChangeUserRatingEvent(data.github_login, rating)
 
     def upsert_member_commits(self, login: str, amount: int) -> None:
         commits = 0

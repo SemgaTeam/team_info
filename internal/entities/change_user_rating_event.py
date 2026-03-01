@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
 @dataclass
-class BotWebhookEvent:
+class ChangeUserRatingEvent:
     github_login: str
     rating: int
