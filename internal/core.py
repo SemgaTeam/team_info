@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from .db import DB
 from .utils import *
-from .entities import MemberStats, User
+from .entities import MemberStats, User, RawCommiterData, BotWebhookEvent
 
 load_dotenv()
 
@@ -53,7 +53,12 @@ class Core:
                 raise Exception("user is none")
 
             users.append(user)
-            user_rating = self.calculate_rating(stat)
+
+            user_rating = self.calculate_rating(
+                RawCommiterData(github_login=user.github_login, 
+                                commits=stat.commits,
+                                closed_issues=stat.closed_issues)
+            )
             rating.append(user_rating)
 
         return list(zip(
@@ -62,15 +67,24 @@ class Core:
             rating
         ))
 
-    async def handle_webhook_event(self, event_type, sender_login, repository_name, payload, received_at):
+    async def handle_webhook_event(self, event_type, sender_login, repository_name, payload, received_at) -> BotWebhookEvent | None:
         payload_json = json.dumps(payload, ensure_ascii=False)
 
         self.db.insert_webhook_event(event_type, sender_login, repository_name, payload_json, received_at)
 
+        data: RawCommiterData | None = None
+
         if event_type == "push":
-            self.handle_push_event(payload)
+            data = self.handle_push_event(payload)
         elif event_type == "issues":
-            self.handle_issues_event(payload)
+            data = self.handle_issues_event(payload)
+
+        if not data:
+            return
+            
+        rating = self.calculate_rating(data)
+
+        return BotWebhookEvent(data.github_login, rating)
 
     def upsert_member_commits(self, login: str, amount: int) -> None:
         commits = 0
@@ -104,36 +118,42 @@ class Core:
         self.db.insert_member_stats(login, commits, issues+1, now)
 
 
-    def handle_push_event(self, payload: dict) -> None:
+    def handle_push_event(self, payload: dict) -> RawCommiterData | None:
         commits = payload.get("commits", [])
-        authors_count: dict[str, int] = {}
+        commiter = commits[0].get("commiter") or {} # must be the same for all pushed commits
+        commiter_login = commiter.get("username") or ""
+        amount = 0
+
         for commit in commits:
             author = commit.get("author") or {}
-            commiter = commit.get("commiter") or {}
-
             author_login = author.get("username") or ""
-            commiter_login = commiter.get("username") or ""
 
             if author_login != commiter_login: # count commits only made by the commiter
                 continue
 
-            authors_count[author_login] = authors_count.get(author_login, 0) + 1
+            amount += 1
 
-        for login, amount in authors_count.items():
-            self.upsert_member_commits(login, amount)
+        self.upsert_member_commits(commiter_login, amount)
+
+        return RawCommiterData(github_login=commiter_login, commits=amount)
 
 
-    def handle_issues_event(self, payload: dict) -> None:
+    def handle_issues_event(self, payload: dict) -> RawCommiterData | None:
         if payload.get("action") != "closed":
             return
-        creator = payload.get("sender") or {}
-        login = creator.get("login")
-        if login:
-            self.upsert_member_closed_issue(login)
+        user = payload.get("sender") or {}
+        login = user.get("login")
+        if not login:
+            return
+
+        self.upsert_member_closed_issue(login)
+
+        return RawCommiterData(github_login=login, closed_issues=1)
 
 
-    def calculate_rating(self, stat: MemberStats) -> int:
-        return stat.commits + stat.closed_issues    
+    def calculate_rating(self, data: RawCommiterData) -> int:
+        return data.commits + data.closed_issues
+
 
 def get_league_name(score: int) -> str:
     if score >= 120:
