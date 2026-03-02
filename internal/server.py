@@ -1,11 +1,12 @@
 import hmac
 import hashlib
-from internal.core import Core
+from .core import Core
+from .event_bus import EventBus
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Header, HTTPException, Request, Depends
 
-def get_app(get_core) -> FastAPI:
+def get_app(get_core, get_event_bus) -> FastAPI:
     app = FastAPI(title="WebHook server")
 
     @app.post("/postreceive")
@@ -13,7 +14,8 @@ def get_app(get_core) -> FastAPI:
         request: Request,
         x_github_event: str | None = Header(default=None),
         x_hub_signature_256: str | None = Header(default=None),
-        core: Core = Depends(get_core)
+        core: Core = Depends(get_core),
+        event_bus: EventBus = Depends(get_event_bus)
     ) -> dict:
         if not x_github_event:
             raise HTTPException(status_code=400, detail="Missing X-GitHub-Event header")
@@ -28,7 +30,8 @@ def get_app(get_core) -> FastAPI:
         sender_login = (payload.get("sender") or {}).get("login")
         repository_name = (payload.get("repository") or {}).get("full_name")
 
-        await core.handle_webhook_event(x_github_event, sender_login, repository_name, payload, received_at)
+        event = await core.handle_webhook_event(x_github_event, sender_login, repository_name, payload, received_at)
+        await event_bus.publish([event])
 
         return {"status": "ok"}
 

@@ -23,9 +23,11 @@ class Bot:
         self.app = app
         self.core = core
     
-    def run(self):
+    async def run(self):
+        await self.app.initialize()
+        await self.app.start()
+        await self.app.updater.start_polling() # pyright: ignore[reportOptionalMemberAccess]
         print("Бот запущен...")
-        self.app.run_polling()
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id if update.effective_chat else None

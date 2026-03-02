@@ -26,7 +26,7 @@ class DB:
         self.conn.execute(
             """
             CREATE TABLE IF NOT EXISTS member_stats (
-                user_id INTEGER,
+                user_id INTEGER UNIQUE,
                 commits INTEGER NOT NULL DEFAULT 0,
                 closed_issues INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL,
@@ -50,7 +50,7 @@ class DB:
             """
             INSERT INTO member_stats (user_id, commits, closed_issues, updated_at)
             VALUES (?, ?, ?, ?)
-            ON CONFLICT(login) DO UPDATE SET
+            ON CONFLICT(user_id) DO UPDATE SET
                 commits = excluded.commits,
                 closed_issues = excluded.closed_issues,
                 updated_at = excluded.updated_at
@@ -83,7 +83,13 @@ class DB:
             """
         ).fetchall()
 
-        return rows
+        list: List[MemberStats] = []
+        for row in rows:
+            list.append(
+                MemberStats(user_id=row[0], commits=row[1], closed_issues=row[2], updated_at=row[3])
+            )
+
+        return list
 
     def get_member_stats_by_user_id(self, id: int) -> MemberStats | None:
         row = self.conn.execute(
@@ -95,7 +101,12 @@ class DB:
             (id,)
         ).fetchone()
 
-        return row
+        if row is None:
+            return None
+
+        stat = MemberStats(user_id=row[0], commits=row[1], closed_issues=row[2], updated_at=row[3])
+
+        return stat
 
     def get_user_by_id(self, user_id: int) -> User | None:
         row = self.conn.execute(
@@ -107,7 +118,12 @@ class DB:
             (user_id,)
         ).fetchone()
 
-        return row
+        if row is None:
+            return None
+
+        user = User(row[0], row[1], row[2])
+
+        return user
 
     def get_user_by_login(self, login: str) -> User | None:
         row = self.conn.execute(
@@ -119,5 +135,10 @@ class DB:
             (login,)
         ).fetchone()
 
-        return row
+        if row is None:
+            return None
+
+        user = User(row[0], row[1], row[2])
+
+        return user
         
