@@ -38,8 +38,16 @@ class DB:
             """
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                github_login TEXT NOT NULL,
-                telegram_id TEXT NOT NULL  
+                github_login TEXT NOT NULL
+            )
+            """
+        )
+        self.conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS user_telegram_chats (
+                user_id INTEGER NOT NULL,
+                chat_id TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
             )
             """
         )
@@ -111,7 +119,7 @@ class DB:
     def get_user_by_id(self, user_id: int) -> User | None:
         row = self.conn.execute(
             """
-            SELECT id, github_login, telegram_id
+            SELECT id, github_login 
             FROM users
             WHERE id = ?
             """,
@@ -121,14 +129,25 @@ class DB:
         if row is None:
             return None
 
-        user = User(row[0], row[1], row[2])
+        user = User(id=row[0], github_login=row[1])
+        row = self.conn.execute(
+            """
+            SELECT chat_id
+            FROM user_telegram_chats
+            WHERE user_id = ?
+            """,
+            (user.id,)
+        ).fetchone()
+
+        if row is not None:
+            user.telegram_id = row
 
         return user
 
     def get_user_by_login(self, login: str) -> User | None:
         row = self.conn.execute(
             """
-            SELECT id, github_login, telegram_id
+            SELECT id, github_login
             FROM users
             WHERE github_login = ?
             """,
@@ -138,7 +157,18 @@ class DB:
         if row is None:
             return None
 
-        user = User(row[0], row[1], row[2])
+        user = User(id=row[0], github_login=row[1])
+        row = self.conn.execute(
+            """
+            SELECT chat_id
+            FROM user_telegram_chats
+            WHERE user_id = ?
+            """,
+            (user.id,)
+        ).fetchone()
+
+        if row is not None:
+            user.telegram_id = row
 
         return user
         

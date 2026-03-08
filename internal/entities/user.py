@@ -4,4 +4,4 @@ from dataclasses import dataclass
 class User:
     id: int
     github_login: str
-    telegram_id: str
+    telegram_id: str | None = None

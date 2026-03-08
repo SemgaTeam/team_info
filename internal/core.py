@@ -39,8 +39,11 @@ class Core:
             )
 
         now = utc_now_iso()
-        for member, (commits, issues) in zip(members, stats):
-            self.db.insert_member_stats(member, commits, issues, now)
+        for github_login, (commits, issues) in zip(members, stats):
+            user = self.db.get_user_by_login(github_login)
+            if user is None:
+                continue
+            self.db.insert_member_stats(user.id, commits, issues, now)
 
     async def load_stats(self) -> List[tuple[MemberStats, User, int]]:
         stats = self.db.get_members_stats()
