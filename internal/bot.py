@@ -13,7 +13,7 @@ from typing import List, Dict
 class Bot:
     def __init__(self, telegram_token: str, core: Core):
         app = ApplicationBuilder().token(telegram_token).build()
-        app.add_handler(CommandHandler("start", self.start))
+        app.add_handler(CommandHandler("login", self.login))
         app.add_handler(CommandHandler("leaderboard", self.leaderboard))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_text_message))
 
@@ -29,7 +29,7 @@ class Bot:
         await self.app.updater.start_polling() # pyright: ignore[reportOptionalMemberAccess]
         print("Бот запущен...")
 
-    async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def login(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         chat_id = update.effective_chat.id if update.effective_chat else None
         if chat_id is None:
             return
@@ -38,7 +38,7 @@ class Bot:
         self.pending_github_login_chats.add(chat_id_str)
 
         await update.message.reply_text( # pyright: ignore[reportOptionalMemberAccess]
-            "Привет! Введи свой GitHub login:"
+            "Введи свой GitHub login:"
         )
 
 
@@ -90,6 +90,8 @@ class Bot:
 def format_leaderboard(stats: List[tuple[MemberStats, User, int]]) -> str:
     if not stats:
         return "🏆 Лидерборд команды:\n\nПока нет данных. "
+
+    stats.sort(key = lambda stat: stat[2], reverse=True)
 
     msg = "🏆 Лидерборд команды:\n\n"
     for i, (stat, user, rating) in enumerate(stats, start=1):

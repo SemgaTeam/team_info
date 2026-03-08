@@ -25,20 +25,20 @@ class DB:
         )
         self.conn.execute(
             """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                github_login TEXT NOT NULL
+            )
+            """
+        )
+        self.conn.execute(
+            """
             CREATE TABLE IF NOT EXISTS member_stats (
                 user_id INTEGER UNIQUE,
                 commits INTEGER NOT NULL DEFAULT 0,
                 closed_issues INTEGER NOT NULL DEFAULT 0,
                 updated_at TEXT NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES users(id)
-            )
-            """
-        )
-        self.conn.execute(
-            """
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                github_login TEXT NOT NULL
             )
             """
         )
