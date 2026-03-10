@@ -70,7 +70,7 @@ class Bot:
 
 
     async def change_user_rating(self, event: ChangeUserRatingEvent):
-        chat_id = self.users[event.github_login]
+        chat_id = self.users.get(event.github_login)
         if chat_id is None:
             return
         

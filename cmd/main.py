@@ -19,13 +19,15 @@ GITHUB_SECRET_TOKEN = str(os.getenv("GITHUB_SECRET_TOKEN"))
 TELEGRAM_TOKEN = str(os.getenv("TELEGRAM_TOKEN"))
 DB_PATH = "team.sqlite"
 
+DEBUG = str(os.getenv("DEBUG")).lower() == "true"
+
 db = db.DB(DB_PATH)
 db.init_db()
 
 core = core.Core(db, GITHUB_TOKEN, GITHUB_ORG, GITHUB_SECRET_TOKEN)
 event_bus = EventBus()
 
-app = get_app(lambda: core, lambda: event_bus)
+app = get_app(core, event_bus, debug=DEBUG)
 
 bot = Bot(TELEGRAM_TOKEN, core)
 event_bus.subscribe(ChangeUserRatingEvent, bot.change_user_rating)

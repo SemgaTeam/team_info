@@ -4,9 +4,9 @@ from .core import Core
 from .event_bus import EventBus
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Header, HTTPException, Request, Depends
+from fastapi import FastAPI, Header, HTTPException, Request
 
-def get_app(get_core, get_event_bus) -> FastAPI:
+def get_app(core: Core, event_bus: EventBus, debug=False) -> FastAPI:
     app = FastAPI(title="WebHook server")
 
     @app.post("/postreceive")
@@ -14,16 +14,16 @@ def get_app(get_core, get_event_bus) -> FastAPI:
         request: Request,
         x_github_event: str | None = Header(default=None),
         x_hub_signature_256: str | None = Header(default=None),
-        core: Core = Depends(get_core),
-        event_bus: EventBus = Depends(get_event_bus)
     ) -> dict:
         if not x_github_event:
             raise HTTPException(status_code=400, detail="Missing X-GitHub-Event header")
-        if not x_hub_signature_256:
-            raise HTTPException(status_code=403, detail="X-Hub-Signature-256 header is missing!")
+
+        if not debug:    
+            if not x_hub_signature_256:
+                raise HTTPException(status_code=403, detail="X-Hub-Signature-256 header is missing!")
         
-        payload = await request.body()
-        verify_signature(payload, core.GITHUB_SECRET_TOKEN, x_hub_signature_256)
+            payload = await request.body()
+            verify_signature(payload, core.GITHUB_SECRET_TOKEN, x_hub_signature_256)
 
         payload = await request.json()
         received_at = utc_now_iso()

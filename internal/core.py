@@ -94,15 +94,17 @@ class Core:
         issues = 0
 
         user = self.db.get_user_by_login(login)
-        if user:
-            stats = self.db.get_member_stats_by_user_id(user.id)
-            if stats:
-                commits = stats.commits
-                issues = stats.closed_issues
+        if not user:
+            return
+
+        stats = self.db.get_member_stats_by_user_id(user.id)
+        if stats:
+            commits = stats.commits
+            issues = stats.closed_issues
 
         now = utc_now_iso()
 
-        self.db.insert_member_stats(login, commits+amount, issues, now)
+        self.db.insert_member_stats(user.id, commits+amount, issues, now)
 
 
     def upsert_member_closed_issue(self, login: str) -> None:
@@ -110,20 +112,22 @@ class Core:
         issues = 0
 
         user = self.db.get_user_by_login(login)
-        if user:
-            stats = self.db.get_member_stats_by_user_id(user.id)
-            if stats:
-                commits = stats.commits
-                issues = stats.closed_issues
+        if not user:
+            return
+
+        stats = self.db.get_member_stats_by_user_id(user.id)
+        if stats:
+            commits = stats.commits
+            issues = stats.closed_issues
 
         now = utc_now_iso()
 
-        self.db.insert_member_stats(login, commits, issues+1, now)
+        self.db.insert_member_stats(user.id, commits, issues+1, now)
 
 
     def handle_push_event(self, payload: dict) -> RawCommiterData | None:
         commits = payload.get("commits", [])
-        commiter = commits[0].get("commiter") or {} # must be the same for all pushed commits
+        commiter = commits[0].get("committer") or {}
         commiter_login = commiter.get("username") or ""
         amount = 0
 
